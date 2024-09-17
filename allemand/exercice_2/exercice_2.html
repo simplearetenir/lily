@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice interactif de traduction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            position: relative;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .exercise {
+            text-align: center;
+            margin: 20px 0;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: red;
+        }
+        .correct {
+            color: green;
+        }
+        .black {
+            color: black;
+        }
+        .score {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .attempts {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .back-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="back-button" onclick="window.location.href='#';">Retour aux exercices</button>
+    <h1>Exercice de traduction</h1>
+    <div class="score">Points : <span id="score">0</span></div>
+    <div class="attempts">Essais : <span id="attempts">0</span></div>
+    <div class="exercise">
+        <p id="french-phrase">Chargement...</p>
+        <input type="text" id="user-answer" placeholder="Écrivez la phrase en allemand">
+        <button id="validate-btn" onclick="checkAnswer()">Valider</button>
+        <button id="show-answer-btn" onclick="showAnswer()" style="display:none;">Afficher la réponse</button>
+        <p class="result" id="result"></p>
+    </div>
+</div>
+
+<script>
+    const phrases = [
+        { fr: "Est-ce que quelqu’un a un mouchoir? une cartouche d’encre? des ciseaux? une feuille de papier? de la colle?", de: "Hat jemand ein Taschentuch? Eine Tintenpatrone? Eine Schere? Ein Blatt Papier? Klebe?" },
+        { fr: "Peux-tu parler plus fort ?", de: "Kannst du lauter sprechen?" },
+        { fr: "Quel exercice ?", de: "Welche Übung?" },
+        { fr: "Puis-je aller à la poubelle ?", de: "Darf ich zum Papierkorb gehen?" },
+        { fr: "Pardon !", de: "Entschuldigung!" },
+        { fr: "Pouvez-vous répéter la question ?", de: "Können Sie die Frage wiederholen, bitte?" },
+        { fr: "Comment dit-on « Vorsätze » en français ?", de: "Wie sagt man « Vorsätze » auf Französisch?" },
+        { fr: "Je ne comprends pas le mot.", de: "Ich verstehe das Wort nicht." },
+        { fr: "Que devons-nous faire ?", de: "Was sollen wir tun?" },
+        { fr: "Quelle page ?", de: "Welche Seite?" },
+        { fr: "Puis-je fermer la fenêtre ?", de: "Darf ich das Fenster zumachen?" },
+        { fr: "Pouvez-vous écrire la phrase au tableau ?", de: "Können Sie den Satz an die Tafel schreiben?" }
+    ];
+
+    let currentPhrase = {};
+    let score = 0;
+    let attempts = 0;
+
+    function getRandomPhrase() {
+        currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        document.getElementById('french-phrase').textContent = currentPhrase.fr;
+        document.getElementById('user-answer').value = '';
+        document.getElementById('result').textContent = '';
+        document.getElementById('show-answer-btn').style.display = 'none';
+        document.getElementById('validate-btn').textContent = "Valider";
+        document.getElementById('validate-btn').onclick = checkAnswer;
+        document.getElementById('validate-btn').style.display = 'inline-block';
+        attempts = 0;
+        document.getElementById('attempts').textContent = attempts;
+    }
+
+    function normalizeText(text) {
+        return text.toLowerCase().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function highlightErrors(userAnswer, correctAnswer) {
+        const userWords = userAnswer.split(' ');
+        const correctWords = correctAnswer.split(' ');
+
+        let result = userWords.map((word, index) => {
+            return word === correctWords[index] ? `<span class="correct">${word}</span>` : `<span class="incorrect">${word}</span>`;
+        }).join(' ');
+
+        return result;
+    }
+
+    function checkAnswer() {
+        const userAnswer = normalizeText(document.getElementById('user-answer').value);
+        const correctAnswer = normalizeText(currentPhrase.de);
+        const resultElement = document.getElementById('result');
+        attempts++;
+        document.getElementById('attempts').textContent = attempts;
+
+        if (userAnswer === correctAnswer) {
+            resultElement.innerHTML = "Correct !";
+            resultElement.style.color = 'green';
+            score++;
+            document.getElementById('score').textContent = score;
+            swapToNextPhraseButton();
+        } else {
+            resultElement.innerHTML = "<span class='black'>Faux ! Corrigez les parties en rouge :</span><br>" + highlightErrors(document.getElementById('user-answer').value, currentPhrase.de);
+            resultElement.style.color = 'black';
+            document.getElementById('show-answer-btn').style.display = 'inline-block';
+        }
+    }
+
+    function showAnswer() {
+        const resultElement = document.getElementById('result');
+        resultElement.innerHTML = `La bonne réponse est : "${currentPhrase.de}"`;
+        resultElement.className = 'blue';
+        swapToNextPhraseButton();
+    }
+
+    function swapToNextPhraseButton() {
+        document.getElementById('validate-btn').textContent = "Voir une autre phrase";
+        document.getElementById('validate-btn').onclick = getRandomPhrase;
+        document.getElementById('show-answer-btn').style.display = 'none';
+    }
+
+    // Load a random phrase on page load
+    window.onload = getRandomPhrase;
+</script>
+
+</body>
+</html>
