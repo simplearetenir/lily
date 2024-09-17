@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Réviser l'allemand</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .wrong-answer {
+            color: red;
+        }
+
+        .correct-answer {
+            color: green;
+        }
+
+        #optionsForm {
+            margin-top: 20px;
+        }
+
+        #response {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #translation {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #scoreboard {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Réviser l'allemand</h1>
+    <button id="playButton">Lancer une phrase</button>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+
+    <!-- Audio for victory and defeat sounds -->
+    <audio id="victorySound" src="victory.mp3"></audio>
+    <audio id="defeatSound" src="defeat.mp3"></audio>
+
+    <form id="optionsForm" class="hidden">
+        <p>Sélectionnez la bonne traduction :</p>
+        <div id="options"></div>
+        <button type="submit" id="validateButton">Valider</button>
+    </form>
+
+    <div id="response"></div>
+    <div id="translation"></div>
+    <div id="scoreboard">
+        <p>Bonnes réponses : <span id="correctAnswers">0</span> / <span id="totalAttempts">0</span> essais</p>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playButton = document.getElementById('playButton');
+        const optionsForm = document.getElementById('optionsForm');
+        const optionsDiv = document.getElementById('options');
+        const responseDiv = document.getElementById('response');
+        const translationDiv = document.getElementById('translation');
+        const correctAnswersSpan = document.getElementById('correctAnswers');
+        const totalAttemptsSpan = document.getElementById('totalAttempts');
+        const validateButton = document.getElementById('validateButton');
+
+        // Victory and defeat sounds
+        const victorySound = document.getElementById('victorySound');
+        const defeatSound = document.getElementById('defeatSound');
+
+        let correctAnswers = 0;
+        let totalAttempts = 0;
+
+        // Liste des phrases en allemand et leurs traductions en français
+        const phrases = [
+            {de: 'Setzt euch !', fr: 'Asseyez-vous !'},
+            {de: 'Packt eure Sachen aus !', fr: 'Sortez vos affaires !'},
+            {de: 'Nehmt euer Aufgabeheft !', fr: 'Prenez votre cahier de devoirs !'},
+            {de: 'Hört gut zu und sprecht nach !', fr: 'Écoutez attentivement et répétez !'},
+            {de: 'Kreutz jeweils die richtige Antwort an !', fr: 'Cochez toujours la bonne réponse !'},
+            {de: 'Wer fehlt heute?', fr: 'Qui est absent aujourd\'hui ?'},
+            {de: 'Würdest du bitte die Arbeitsblätter austeilen ?', fr: 'Pourrais-tu distribuer les feuilles de travail, s\'il te plaît ?'},
+            {de: 'Wer möchte die Arbeiten einsammeln ?', fr: 'Qui veut ramasser les travaux ?'},
+            {de: 'Bist du fertig ?', fr: 'As-tu fini ?'},
+            {de: 'Wir schlagen das Lehrbuch auf Seite 17 auf.', fr: 'Nous ouvrons le manuel à la page 17.'},
+            {de: 'Kannst du mal bitte die Tafel abwischen ?', fr: 'Peux-tu essuyer le tableau, s\'il te plaît ?'},
+            {de: 'Seid ihr schon fertig ?', fr: 'Avez-vous déjà terminé ?'}
+        ];
+
+        let currentPhrase = {};
+        
+        // Lancer une phrase aléatoire
+        playButton.addEventListener('click', () => {
+            const randomIndex = Math.floor(Math.random() * phrases.length);
+            currentPhrase = phrases[randomIndex];
+
+            // Change la source de l'audio
+            const randomFile = currentPhrase.de.replace(/!|\?/g, '').trim() + '.mp3';
+            audioPlayer.src = randomFile;
+            
+            // Affiche le lecteur audio et lit le fichier
+            audioPlayer.style.display = 'block';
+            audioPlayer.play();
+
+            // Affiche le questionnaire
+            displayQuestionnaire();
+            
+            // Réinitialiser l'interface
+            responseDiv.style.display = 'none';
+            translationDiv.style.display = 'none';
+            validateButton.textContent = 'Valider';
+            validateButton.classList.remove('hidden');
+            validateButton.removeEventListener('click', playNextPhrase); // Enlève l'écouteur si existant
+        });
+
+        // Afficher le formulaire avec les choix multiples
+        function displayQuestionnaire() {
+            // Générer 3 autres traductions aléatoires incorrectes
+            let incorrectPhrases = phrases.filter(p => p.fr !== currentPhrase.fr)
+                                          .sort(() => 0.5 - Math.random())
+                                          .slice(0, 3);
+            
+            // Ajouter la bonne réponse et mélanger les options
+            let options = [...incorrectPhrases, currentPhrase].sort(() => 0.5 - Math.random());
+
+            // Générer le formulaire de choix multiple avec les phrases en français
+            optionsDiv.innerHTML = '';
+            options.forEach((option, index) => {
+                const radioOption = document.createElement('div');
+                radioOption.innerHTML = `<input type="radio" name="answer" value="${option.fr}" id="option${index}">
+                                         <label for="option${index}">${option.fr}</label>`;
+                optionsDiv.appendChild(radioOption);
+            });
+
+            optionsForm.classList.remove('hidden');
+        }
+
+        // Valider la réponse
+        optionsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) {
+                totalAttempts++; // Incrémenter les essais
+                const isCorrect = selectedOption.value === currentPhrase.fr;
+
+                if (isCorrect) {
+                    correctAnswers++; // Incrémenter les bonnes réponses
+                    responseDiv.textContent = 'Bonne réponse !';
+                    responseDiv.className = 'correct-answer';
+
+                    // Jouer le son de victoire
+                    victorySound.play();
+
+                    // Afficher la phrase et sa traduction
+                    translationDiv.innerHTML = `<strong>Phrase en allemand :</strong> ${currentPhrase.de}<br><strong>Traduction :</strong> ${currentPhrase.fr}`;
+                    translationDiv.style.display = 'block';
+
+                    // Remplacer le bouton "Valider" par "Jouer une autre phrase"
+                    validateButton.textContent = 'Jouer une autre phrase';
+                    validateButton.addEventListener('click', playNextPhrase);
+                } else {
+                    responseDiv.textContent = 'Mauvaise réponse.';
+                    responseDiv.className = 'wrong-answer';
+
+                    // Jouer le son de défaite
+                    defeatSound.play();
+                }
+
+                responseDiv.style.display = 'block';
+
+                // Mettre à jour le score
+                correctAnswersSpan.textContent = correctAnswers;
+                totalAttemptsSpan.textContent = totalAttempts;
+            }
+        });
+
+        // Fonction pour jouer une autre phrase
+        function playNextPhrase() {
+            playButton.click(); // Simule un clic pour jouer une autre phrase
+        }
+    </script>
+
+</body>
+</html>
